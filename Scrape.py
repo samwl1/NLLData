@@ -9,16 +9,20 @@ import pandas as pd
 page = requests.get("https://lscluster.hockeytech.com/game_reports/game-summary.php?game_id=1461&client_code=nll")
 soup = BeautifulSoup(page.content, 'html.parser')
 
-teams = pd.read_csv('teams.csv')
-print(soup.prettify)
+# teams = pd.read_csv('teams.csv')
+# print(soup.prettify)
 # tagtype = [type(item) for item in list(soup.children)]
-# htmlTag = list(soup.children)[2]
-# trs = soup.find_all('tr')
+htmlTag = list(soup.children)[2]
+trs = soup.find_all('tr')
 
-# stats = []
-# for link in trs:
-#     if "Name" in link.get_text():
-#         stats.append(link.get_text())
+# print(trs)
+stats = []
+for link in trs:
+    children = list(link.children)
+    for child in children:
+        print(child.getText())
+    print('--------------')
+    
 
 
 # splits = stats[0].split()
