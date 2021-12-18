@@ -20,6 +20,7 @@ stats = []
 for link in trs:
     children = list(link.children)
     for child in children:
+        input()
         print(child.getText())
     print('--------------')
     
