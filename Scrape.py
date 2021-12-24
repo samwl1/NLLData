@@ -28,7 +28,7 @@ rowG = 0
 row = 0
 entry = []
 teams = {}
-teamTotalentry1 = []
+teamTotalentry1 = {}
 goalieEntry = []
 teamTotals = {}
 flag = False
@@ -126,25 +126,25 @@ for link in trs:
                 if not flag2:
                     continue
                 if j == 11:
-                    teamTotalentry1.append(kid)
+                    teamTotalentry1[columns[j+3]] = kid
                     if len(teamTotals) == 0:
                         teamTotals[teams["VISITORS"]] = teamTotalentry1
                     else:
                         teamTotals[teams["HOME"]] = teamTotalentry1
-                    teamTotalentry1 = []
+                    teamTotalentry1 = {}
                     teamTotalFlag = False
                     j=0
                 else:
-                    teamTotalentry1.append(kid)
+                    teamTotalentry1[columns[j+3]] = kid
                     j+=1
             else:
                 if not flag2:
                     continue
                 if '/' in kid:
-                    teamTotalentry1.append(kid)
+                    teamTotalentry1[columns[j+3]] = kid
                 else:
                     num = int(kid)
-                    teamTotalentry1.append(num)
+                    teamTotalentry1[columns[j+3]] = num
                 j+=1
         elif flag and (kid != '\n' or kid != '' or kid != ' ' or kid != '\t'):
             if kid in columns and i != 2:
@@ -186,8 +186,7 @@ for link in trs:
                         entry.append(num)
                     i+=1
 
-      
-print(gdf)
+print(teamTotals)    
 # splits = gameStats['Game Summary'].split('\n')
 # fixedSplits = []
 # for split in splits:
@@ -196,3 +195,4 @@ print(gdf)
 #     else:
 #         fixedSplits.append(split.replace('\t', ''))
 # gameStats['Game Summary'] = fixedSplits
+# print(fixedSplits)
