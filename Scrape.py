@@ -5,7 +5,7 @@ from urllib.request import urlopen
 from time import sleep
 import requests
 import pandas as pd
-# "https://pointstreak.com/prostats/gamesheet_full.html?gameid=2965400"
+
 page = requests.get("https://lscluster.hockeytech.com/game_reports/game-summary.php?game_id=1461&client_code=nll")
 soup = BeautifulSoup(page.content, 'html.parser')
 
@@ -34,6 +34,12 @@ teamTotals = {}
 flag = False
 teamTotalFlag = False
 goalieFlag = False
+quarterFlag = False
+quarterFlag2 = False
+qIndx = 0
+quarters = {}
+qTeam = ''
+qTeamEntry = {}
 for link in trs:
     children = list(link.children)
     
@@ -41,6 +47,7 @@ for link in trs:
     for child in children:
         
         kid = child.getText()
+        
         
         if 'GAME SUMMARY' in kid:
             gameStats['Game Summary'] = kid
@@ -50,6 +57,10 @@ for link in trs:
         elif 'VISITORS' in kid and len(kid) <= 40:
             nameSplit = kid.split(':')
             teams[nameSplit[0]] = nameSplit[1].strip()
+        elif 'SCORING' in kid and len(kid) <= 10:
+            quarterFlag = True
+        elif 'SHOTS' in kid and len(kid) < 10:
+            quarterFlag = False
         elif 'HOME' in kid and len(kid) <= 40:
             nameSplit = kid.split(':')
             teams[nameSplit[0]] = nameSplit[1].strip()
@@ -61,8 +72,46 @@ for link in trs:
             teamTotalFlag = True
         elif 'Goalies' in kid and len(kid) <= 20:
             goalieFlag = True
-        # elif goalieFlag and (rowG==2 or rowG==4):
-        #     goalieFlag = False
+        elif quarterFlag and (kid != '\n' or kid != '' or kid != ' ' or kid != '\t'):
+            # Use headers in first iteration of loop to determine how many indexes you need
+            # This will make it work regardless of how many OT periods there are
+            kid = kid.replace('\n', '')
+            kid = kid.replace(' ', '')
+            kid = kid.replace('\xa0', '')
+            kid = kid.replace('\t', '')
+
+            if 'Total' in kid and len(kid) <= 10:
+                quarterFlag2 = True
+                continue
+          
+            if kid == '' and quarterFlag2:
+                continue
+
+            if qIndx == 0 and qTeam == '' and kid != '' and kid != ' ' and quarterFlag2:
+                qTeam = kid
+                print(qTeam)
+                print("That is the team")
+                qIndx+=1
+                
+                
+            elif quarterFlag2:
+                if qIndx == 5:
+                    
+                    qTeamEntry['Total'] = int(kid)
+                    quarters[qTeam] = qTeamEntry
+                    qTeamEntry = {}
+                    qIndx = 0
+                    qTeam = ''
+                else:
+                
+                    if kid == qTeam:
+                        
+                        continue
+                    else:
+                        qTeamEntry[qIndx] = kid
+                        qIndx+=1
+
+
         elif goalieFlag and (kid != '\n' or kid != '' or kid != ' ' or kid != '\t'):
             kid = kid.replace('\n', '')
             kid = kid.replace(' ', '')
@@ -88,6 +137,10 @@ for link in trs:
                 continue
                 
             if (':' in kid or ',' in kid) and flag3:
+                if '(W)' in kid:
+                    kid.replace('(W)', '')
+                if '(L)' in kid:
+                    kid.replace('(W)', '')
                 if k == 6:
                     goalieEntry.append(kid)
                     k = 0
@@ -186,7 +239,7 @@ for link in trs:
                         entry.append(num)
                     i+=1
 
-print(teamTotals)    
+print(quarters)    
 # splits = gameStats['Game Summary'].split('\n')
 # fixedSplits = []
 # for split in splits:
