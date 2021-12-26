@@ -6,7 +6,7 @@ from time import sleep
 import requests
 import pandas as pd
 
-page = requests.get("https://lscluster.hockeytech.com/game_reports/game-summary.php?game_id=1461&client_code=nll")
+page = requests.get("https://lscluster.hockeytech.com/game_reports/game-summary.php?game_id=1462&client_code=nll")
 soup = BeautifulSoup(page.content, 'html.parser')
 
 # teams = pd.read_csv('teams.csv')
@@ -40,14 +40,15 @@ qIndx = 0
 quarters = {}
 qTeam = ''
 qTeamEntry = {}
+qHeaders = []
 for link in trs:
     children = list(link.children)
     
    
     for child in children:
-        
         kid = child.getText()
-        
+        # input()
+        # print(kid)
         
         if 'GAME SUMMARY' in kid:
             gameStats['Game Summary'] = kid
@@ -83,19 +84,19 @@ for link in trs:
             if 'Total' in kid and len(kid) <= 10:
                 quarterFlag2 = True
                 continue
+            if (not quarterFlag2) and kid != '' and kid != ' ' and kid != 'SCORING':
+                qHeaders.append(kid)
           
             if kid == '' and quarterFlag2:
                 continue
 
             if qIndx == 0 and qTeam == '' and kid != '' and kid != ' ' and quarterFlag2:
                 qTeam = kid
-                print(qTeam)
-                print("That is the team")
-                qIndx+=1
+                
                 
                 
             elif quarterFlag2:
-                if qIndx == 5:
+                if qIndx == len(qHeaders):
                     
                     qTeamEntry['Total'] = int(kid)
                     quarters[qTeam] = qTeamEntry
@@ -108,7 +109,7 @@ for link in trs:
                         
                         continue
                     else:
-                        qTeamEntry[qIndx] = kid
+                        qTeamEntry[qHeaders[qIndx]] = kid
                         qIndx+=1
 
 
