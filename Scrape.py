@@ -33,7 +33,9 @@ goalieEntry = []
 teamTotals = {}
 flag = False
 teamTotalFlag = False
+
 goalieFlag = False
+
 quarterFlag = False
 quarterFlag2 = False
 qIndx = 0
@@ -41,20 +43,15 @@ quarters = {}
 qTeam = ''
 qTeamEntry = {}
 qHeaders = []
+ppFlag = False
+
 for link in trs:
     children = list(link.children)
-    
-   
     for child in children:
         kid = child.getText()
-        # input()
-        # print(kid)
         
         if 'GAME SUMMARY' in kid:
             gameStats['Game Summary'] = kid
-        # elif kid in columns and i == 0:
-            
-        #     continue
         elif 'VISITORS' in kid and len(kid) <= 40:
             nameSplit = kid.split(':')
             teams[nameSplit[0]] = nameSplit[1].strip()
@@ -71,15 +68,30 @@ for link in trs:
         elif 'TEAM TOTAL' in kid and len(kid) == len('team total'):
             flag = False
             teamTotalFlag = True
+        elif 'Scoring' in kid and len(kid) <= 30:
+            ppFlag = True
+        elif 'Penalties' in kid and len(kid) <= 40:
+            ppFlag = False
         elif 'Goalies' in kid and len(kid) <= 20:
             goalieFlag = True
-        elif quarterFlag and (kid != '\n' or kid != '' or kid != ' ' or kid != '\t'):
-            # Use headers in first iteration of loop to determine how many indexes you need
-            # This will make it work regardless of how many OT periods there are
+        elif ppFlag and (kid != '\n' or kid != '' or kid != ' ' or kid != '\t'):
             kid = kid.replace('\n', '')
-            kid = kid.replace(' ', '')
             kid = kid.replace('\xa0', '')
             kid = kid.replace('\t', '')
+            # s1 = kid.split('.')
+            # s2 = s1[1].split(',')
+            # if 'PP' in s2[2]: 
+            #     contain_values = df[df['Name'].str.contains(s2[0])]
+            #     contain_values['PP Goal'] = int(contain_values['PP Goal']) + 1
+            #     df[df['Name'].str.contains(s2[0])] = contain_values
+
+
+        elif quarterFlag and (kid != '\n' or kid != '' or kid != ' ' or kid != '\t'):
+            kid = kid.replace('\n', '')
+            kid = kid.replace('\xa0', '')
+            kid = kid.replace('\t', '')
+            kid = kid.replace(' ', '')
+           
 
             if 'Total' in kid and len(kid) <= 10:
                 quarterFlag2 = True
@@ -141,7 +153,7 @@ for link in trs:
                 if '(W)' in kid:
                     kid.replace('(W)', '')
                 if '(L)' in kid:
-                    kid.replace('(W)', '')
+                    kid.replace('(L)', '')
                 if k == 6:
                     goalieEntry.append(kid)
                     k = 0
@@ -215,6 +227,9 @@ for link in trs:
                     if x in kid and ',' not in kid and i!=2:                       
                         flag2 = False
                         break
+                    if 'C'==kid or 'A'==kid:
+                        flag2 = False
+                        break
 
                 if kid == '' and flag2:
                     continue
@@ -240,13 +255,18 @@ for link in trs:
                         entry.append(num)
                     i+=1
 
-print(quarters)    
-# splits = gameStats['Game Summary'].split('\n')
-# fixedSplits = []
-# for split in splits:
-#     if '' == split:
-#         continue
-#     else:
-#         fixedSplits.append(split.replace('\t', ''))
-# gameStats['Game Summary'] = fixedSplits
-# print(fixedSplits)
+  
+splits = gameStats['Game Summary'].split('\n')
+fixedSplits = []
+for split in splits:
+    if '' == split:
+        continue
+    else:
+        fixedSplits.append(split.replace('\t', ''))
+gameStats['Game Summary'] = fixedSplits
+gameid = (fixedSplits[0].split('Y'))[1]
+gameDate = (fixedSplits[1].split('-'))[0]
+gameYear = (gameDate.split(','))[2]
+gameStats['Game ID'] = gameid
+gameStats['Game Year'] = gameYear
+print()
