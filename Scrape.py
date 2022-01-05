@@ -17,6 +17,8 @@ trs = soup.find_all('tr')
 gameStats = {}
 goalieCol = ['#', "Name", 'GA', 'Mins', 'SH', 'SVS', 'PIM']
 columns = ["#", "Player Name", "Position", "G", "A", "LB", "CTO", "T", "SH", "PIM", "Wd. SH", "Bl. SH (Off.)", "Bl. SH (Def)", "TSA", "FO"]
+penaltyStats = {}
+
 df = pd.DataFrame(columns=columns)
 gdf = pd.DataFrame(columns=goalieCol)
 
@@ -44,6 +46,9 @@ qTeam = ''
 qTeamEntry = {}
 qHeaders = []
 ppFlag = False
+ppCountFlag = False
+placeholderPP = ''
+
 
 for link in trs:
     children = list(link.children)
@@ -69,21 +74,76 @@ for link in trs:
             flag = False
             teamTotalFlag = True
         elif 'Scoring' in kid and len(kid) <= 30:
-            ppFlag = True
-        elif 'Penalties' in kid and len(kid) <= 40:
+            if ppFlag == True:
+                varSplit = kid.split(' ')
+                placeholderPP = varSplit[0]
+                penaltyStats[placeholderPP] = {}
+            else:
+                varSplit = kid.split(' ')
+                placeholderPP = varSplit[0]
+                penaltyStats[placeholderPP] = {}
+                ppFlag = True
+            
+
+        
+            
+        elif 'Penalties' in kid:
+            kid = kid.replace('\n', '')
+            kid = kid.replace('\xa0', '')
+            kid = kid.replace('\t', '')
             ppFlag = False
+            
+            if ppCountFlag == True:
+                ph = penaltyStats[placeholderPP]['Opportunities']
+                phn = placeholderPP
+                varSplit = kid.split(' ')
+                placeholderPP = varSplit[0]
+                
+                penaltyStats[placeholderPP]['Opportunities'] = 0
+                penaltyStats[placeholderPP]['Opportunities'] = ph
+                placeholderPP = phn
+                penaltyStats[placeholderPP]['Opportunities'] = 0
+                # KEEP WORKING HERE
+            else:
+                varSplit = kid.split(' ')
+                placeholderPP = varSplit[0]
+                ppCountFlag = True
+                penaltyStats[placeholderPP]['Opportunities'] = 0
+                
+
+        elif 'Penalty Shots' in kid or ('PP' in kid and 'PIM' in kid and 'PTS' in kid):
+            ppCountFlag = False
         elif 'Goalies' in kid and len(kid) <= 20:
             goalieFlag = True
+        elif ppCountFlag and (kid != '\n' or kid != '' or kid != ' ' or kid != '\t'):
+            kid = kid.replace('\n', '')
+            kid = kid.replace('\xa0', '')
+            kid = kid.replace('\t', '')
+            if kid == ' ' or kid =='':
+                continue
+            elif '(PS)' in kid or '(PP)' in kid:
+                penaltyStats[placeholderPP]['Opportunities'] = penaltyStats[placeholderPP]['Opportunities'] +1
+            else:
+                continue
+
         elif ppFlag and (kid != '\n' or kid != '' or kid != ' ' or kid != '\t'):
             kid = kid.replace('\n', '')
             kid = kid.replace('\xa0', '')
             kid = kid.replace('\t', '')
-            # s1 = kid.split('.')
-            # s2 = s1[1].split(',')
-            # if 'PP' in s2[2]: 
-            #     contain_values = df[df['Name'].str.contains(s2[0])]
-            #     contain_values['PP Goal'] = int(contain_values['PP Goal']) + 1
-            #     df[df['Name'].str.contains(s2[0])] = contain_values
+            if kid == ' ' or kid =='':
+                continue
+            else:
+                
+                s1 = kid.split('.')
+                
+                s2 = s1[1].split(',')
+                
+                if 'PP' in s2[-1]:
+                    if s2[0] in penaltyStats[placeholderPP]:
+                        penaltyStats[placeholderPP][s2[0]] =  penaltyStats[placeholderPP][s2[0]]+1
+                    else:
+                        penaltyStats[placeholderPP].setdefault(s2[0], 1)
+                
 
 
         elif quarterFlag and (kid != '\n' or kid != '' or kid != ' ' or kid != '\t'):
@@ -269,4 +329,4 @@ gameDate = (fixedSplits[1].split('-'))[0]
 gameYear = (gameDate.split(','))[2]
 gameStats['Game ID'] = gameid
 gameStats['Game Year'] = gameYear
-print()
+
