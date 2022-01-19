@@ -5,8 +5,43 @@ from urllib.request import urlopen
 from time import sleep
 import requests
 import pandas as pd
+def fixDate(date):
+    dateS = date.split(' ')
+    trueDate = []
+    for x in dateS:
+        if x != '':
+            trueDate.append(x.replace(',', ''))
+            
+    if trueDate[1] == 'January':
+        trueDate[1] = 1
+    elif trueDate[1] == 'February':
+        trueDate[1] = 2
+    elif trueDate[1] == 'March':
+        trueDate[1] = 3
+    elif trueDate[1] == 'April':
+        trueDate[1] = 4
+    elif trueDate[1] == 'May':
+        trueDate[1] = 5
+    elif trueDate[1] == 'June':
+        trueDate[1] = 6
+    elif trueDate[1] == 'July':
+        trueDate[1] = 7
+    elif trueDate[1] == 'August':
+        trueDate[1] = 8
+    elif trueDate[1] == 'September':
+        trueDate[1] = 9
+    elif trueDate[1] == 'October':
+        trueDate[1] = 10
+    elif trueDate[1] == 'November':
+        trueDate[1] = 11
+    elif trueDate[1] == 'December':
+        trueDate[1] = 12
+    realDate = "{year}-{month}-{day}".format(year=trueDate[3], month = trueDate[1], day = trueDate[2])
+    return realDate
 
-page = requests.get("https://lscluster.hockeytech.com/game_reports/game-summary.php?game_id=1462&client_code=nll")
+# inid = input("Enter the game id: ")
+inid = 1461
+page = requests.get("https://lscluster.hockeytech.com/game_reports/game-summary.php?game_id={id}&client_code=nll".format(id = inid))
 soup = BeautifulSoup(page.content, 'html.parser')
 
 # teams = pd.read_csv('teams.csv')
@@ -14,39 +49,50 @@ soup = BeautifulSoup(page.content, 'html.parser')
 # tagtype = [type(item) for item in list(soup.children)]
 htmlTag = list(soup.children)[2]
 trs = soup.find_all('tr')
-gameStats = {}
 goalieCol = ['#', "Name", 'GA', 'Mins', 'SH', 'SVS', 'PIM']
 columns = ["#", "Player Name", "Position", "G", "A", "LB", "CTO", "T", "SH", "PIM", "Wd. SH", "Bl. SH (Off.)", "Bl. SH (Def)", "TSA", "FO"]
-penaltyStats = {}
+boxScoreCol = ['Date', 'Year', 'Week', 'game_id', 'team_id', 'Goals', 'Shots', 'Shot_Percent', 'Wide Shots','SH_BLK_OFF', 'SH_BLK_DEF','GB', 'TOs', 'CTOs', 'FO_Win', 'FO_Loss', 'FO_Percent','Power_Play_Goals', 'Power_Play_Opp', 'Power_Play_Percent', 'Penalty_Kill', 'Penalties', 'Pentalty_Kill_Percent', 'Saves', 'Save_Percent', 'Win', 'Q1_Score', 'Q2_Score', 'Q3_Score', 'Q4_Score', 'OT', 'OT_Score', 'Home_Away', 'Assists']
 
-df = pd.DataFrame(columns=columns)
-gdf = pd.DataFrame(columns=goalieCol)
-
-stats = []
 i = 0
 j = 0
 k = 0
 rowG = 0
 row = 0
+# Contains general info like game id, date, etc.
+gameStats = {}
+# Penalty statistics for players, and team opportunities
+penaltyStats = {}
+# Player stats
+df = pd.DataFrame(columns=columns)
+# Goalie stats
+gdf = pd.DataFrame(columns=goalieCol)
+# Contains team ids
+teamdf = pd.read_csv("teams.csv")
+# box score dataframe
+boxScoredf = pd.DataFrame(columns=boxScoreCol)
+stats = []
 entry = []
+# Labels which teams are home/away
 teams = {}
 teamTotalentry1 = {}
 goalieEntry = []
+# Contains the team totals
 teamTotals = {}
-flag = False
-teamTotalFlag = False
-
-goalieFlag = False
-
-quarterFlag = False
-quarterFlag2 = False
-qIndx = 0
+# Contains goals by quarter
 quarters = {}
-qTeam = ''
 qTeamEntry = {}
 qHeaders = []
+
+flag = False
+teamTotalFlag = False
+goalieFlag = False
+quarterFlag = False
+quarterFlag2 = False
 ppFlag = False
 ppCountFlag = False
+
+qIndx = 0
+qTeam = ''
 placeholderPP = ''
 
 
@@ -54,7 +100,6 @@ for link in trs:
     children = list(link.children)
     for child in children:
         kid = child.getText()
-        
         if 'GAME SUMMARY' in kid:
             gameStats['Game Summary'] = kid
         elif 'VISITORS' in kid and len(kid) <= 40:
@@ -76,16 +121,19 @@ for link in trs:
         elif 'Scoring' in kid and len(kid) <= 30:
             if ppFlag == True:
                 varSplit = kid.split(' ')
-                placeholderPP = varSplit[0]
+                if len(varSplit) == 3:
+                    placeholderPP = "{t1} {t2}".format(t1=varSplit[0], t2 = varSplit[1])
+                else:
+                    placeholderPP = varSplit[0]
                 penaltyStats[placeholderPP] = {}
             else:
                 varSplit = kid.split(' ')
-                placeholderPP = varSplit[0]
+                if len(varSplit) == 3:
+                    placeholderPP = "{t1} {t2}".format(t1=varSplit[0], t2 = varSplit[1])
+                else:
+                    placeholderPP = varSplit[0]
                 penaltyStats[placeholderPP] = {}
-                ppFlag = True
-            
-
-        
+                ppFlag = True 
             
         elif 'Penalties' in kid:
             kid = kid.replace('\n', '')
@@ -97,20 +145,19 @@ for link in trs:
                 ph = penaltyStats[placeholderPP]['Opportunities']
                 phn = placeholderPP
                 varSplit = kid.split(' ')
-                placeholderPP = varSplit[0]
-                
+                if len(varSplit) > 2:
+                    placeholderPP = "{t1} {t2}".format(t1=varSplit[0], t2 = varSplit[1])
+                else:
+                    placeholderPP = varSplit[0]
                 penaltyStats[placeholderPP]['Opportunities'] = 0
                 penaltyStats[placeholderPP]['Opportunities'] = ph
                 placeholderPP = phn
                 penaltyStats[placeholderPP]['Opportunities'] = 0
-                # KEEP WORKING HERE
             else:
                 varSplit = kid.split(' ')
                 placeholderPP = varSplit[0]
                 ppCountFlag = True
                 penaltyStats[placeholderPP]['Opportunities'] = 0
-                
-
         elif 'Penalty Shots' in kid or ('PP' in kid and 'PIM' in kid and 'PTS' in kid):
             ppCountFlag = False
         elif 'Goalies' in kid and len(kid) <= 20:
@@ -150,39 +197,37 @@ for link in trs:
             kid = kid.replace('\n', '')
             kid = kid.replace('\xa0', '')
             kid = kid.replace('\t', '')
-            kid = kid.replace(' ', '')
-           
-
-            if 'Total' in kid and len(kid) <= 10:
-                quarterFlag2 = True
-                continue
-            if (not quarterFlag2) and kid != '' and kid != ' ' and kid != 'SCORING':
-                qHeaders.append(kid)
-          
-            if kid == '' and quarterFlag2:
-                continue
-
             if qIndx == 0 and qTeam == '' and kid != '' and kid != ' ' and quarterFlag2:
                 qTeam = kid
+            else:
+                kid = kid.replace(' ', '')
+            
+
+                if 'Total' in kid and len(kid) <= 10:
+                    quarterFlag2 = True
+                    continue
+                if (not quarterFlag2) and kid != '' and kid != ' ' and kid != 'SCORING':
+                    qHeaders.append(kid)
+            
+                if kid == '' and quarterFlag2:
+                    continue
+
                 
-                
-                
-            elif quarterFlag2:
-                if qIndx == len(qHeaders):
-                    
-                    qTeamEntry['Total'] = int(kid)
-                    quarters[qTeam] = qTeamEntry
-                    qTeamEntry = {}
-                    qIndx = 0
-                    qTeam = ''
-                else:
-                
-                    if kid == qTeam:
+                elif quarterFlag2:
+                    if qIndx == len(qHeaders):
                         
-                        continue
+                        qTeamEntry['Total'] = int(kid)
+                        quarters[qTeam] = qTeamEntry
+                        qTeamEntry = {}
+                        qIndx = 0
+                        qTeam = ''
                     else:
-                        qTeamEntry[qHeaders[qIndx]] = kid
-                        qIndx+=1
+                    
+                        if kid == qTeam:
+                            continue
+                        else:
+                            qTeamEntry[qHeaders[qIndx]] = kid
+                            qIndx+=1
 
 
         elif goalieFlag and (kid != '\n' or kid != '' or kid != ' ' or kid != '\t'):
@@ -327,6 +372,72 @@ gameStats['Game Summary'] = fixedSplits
 gameid = (fixedSplits[0].split('Y'))[1]
 gameDate = (fixedSplits[1].split('-'))[0]
 gameYear = (gameDate.split(','))[2]
-gameStats['Game ID'] = gameid
-gameStats['Game Year'] = gameYear
+gameStats['Game ID'] = int(gameid) - 1460
+gameStats['Game Year'] = int(gameYear)
+gameStats['Game Date'] = fixDate(gameDate)
+fTeamTotals = {}
+for x in teamTotals.keys():
+    fTeamTotals[x.title()] = teamTotals[x]
+print(fTeamTotals)
 
+def generateBoxScore(hoa , team, week):
+    bsentry = []
+    bsentry.append(gameStats['Game Date'])
+    bsentry.append(gameStats['Game Year'])
+    bsentry.append(int(week))
+    bsentry.append(gameStats['Game ID'])
+    teamid = teamdf.loc[teamdf['City'] == team].iloc[0]['team_id']
+    bsentry.append(teamid)
+    bsentry.append(int(teamTotals[team]['G']))
+    bsentry.append(int(teamTotals[team]['SH']))
+    bsentry.append(int(teamTotals[team]['G'])/int(teamTotals[team]['SH']))
+    bsentry.append(int(teamTotals[team]['Wd. SH']))
+    bsentry.append(int(teamTotals[team]['Bl. SH (Off.)']))
+    bsentry.append(int(teamTotals[team]['Bl. SH (Def)']))
+    bsentry.append(int(teamTotals[team]['LB']))
+    bsentry.append(int(teamTotals[team]['T']))
+    bsentry.append(int(teamTotals[team]['CTO']))
+    fos = teamTotals[team]['FO'].split('/')
+    foWin = int(fos[0])
+    foLoss = int(fos[1]) - foWin
+    foPerc = foWin/int(fos[1])
+    bsentry.append(foWin)
+    bsentry.append(foLoss)
+    bsentry.append(foPerc)
+    ppg = 0
+    ppopp = penaltyStats[team]['Opportunities']
+    pk = 0
+    pkp = 0
+    penalties = 0
+    for teampp in penaltyStats:
+        if teampp == team:
+            for item in penaltyStats[team]:
+                if item == 'Opportunities':
+                    break
+                else:
+                    ppg+=penaltyStats[team][item]
+        else:
+            for item in penaltyStats[teampp]:
+                if item == 'Opportunities':
+                    pkp = 1 - (pk/int(penaltyStats[teampp]['Opportunities']))
+                    pk = int(penaltyStats[teampp]['Opportunities'])-pk
+                    penalties = int(penaltyStats[teampp]['Opportunities'])
+                else:
+                    pk+=penaltyStats[teampp][item]
+    bsentry.append(ppg)
+    bsentry.append(ppopp)
+    bsentry.append(ppg/ppopp)
+    bsentry.append(pk)
+    bsentry.append(penalties)
+    bsentry.append(pkp)
+    
+
+
+
+
+
+# 'Date', 'Year', 'Week', 'game_id', 'team_id', 'Goals', 'Shots', 'Shot_Percent', 
+# 'Wide Shots','SH_BLK_OFF', 'SH_BLK_DEF','GB', 'TOs', 'CTOs', 'FO_Win', 'FO_Loss', 
+# 'FO_Percent','Power_Play_Goals', 'Power_Play_Opp', 'Power_Play_Percent', 'Penalty_Kill', 
+# 'Penalties', 'Pentalty_Kill_Percent', 'Saves', 'Save_Percent', 'Win', 'Q1_Score', 
+# 'Q2_Score', 'Q3_Score', 'Q4_Score', 'OT', 'OT_Score', 'Home_Away', 'Assists'

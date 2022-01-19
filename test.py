@@ -1,13 +1,11 @@
 import pandas as pd
-# df = pd.DataFrame(columns=['Name', 'Age'])
-# df.loc[0] = ['Y. Es', 19]
-
-# print (contain_values)
-# contain_values['Name'] = 'N. O'
-# df[df['Name'].str.contains('Es')] = contain_values
-# print(df[df['Name'].str.contains('O')])
-kid = ' '
-if kid == '':
-    pass
-else:
-    print('No')
+teamdf = pd.read_csv('teams.csv')
+dict = {}
+dict['TEST1'] = 2
+dict['TEST2'] = 2
+dict['TEST3'] = 10
+fdict = {}
+for x in dict.keys():
+    fdict[x.title()] = dict[x]
+   
+print(fdict) 
