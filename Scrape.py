@@ -378,9 +378,50 @@ gameStats['Game Date'] = fixDate(gameDate)
 fTeamTotals = {}
 for x in teamTotals.keys():
     fTeamTotals[x.title()] = teamTotals[x]
-print(fTeamTotals)
+fTeams = {}
+for x in teams.keys():
+    fTeams[x.title()] = teams[x].title()
 
-def generateBoxScore(hoa , team, week):
+savesentry1 = 0
+goalsMatch1 = 0
+savesentry2 = 0
+goalsMatch2 = 0
+winCheck = 0
+for gidx in range(4):
+    s = gdf['SVS']
+    g = gdf['GA']
+    w = gdf['Name']
+    if gidx == 1 or gidx == 0:
+        if '(W)' in w[gidx]:
+            winCheck = 1
+        if s[gidx] == '-':
+            pass
+        else:
+            savesentry1+=s[gidx]
+        if g[gidx] == '-':
+            pass
+        else:
+            goalsMatch1+=g[gidx]
+    else:
+        if '(W)' in w[gidx]:
+            winCheck = 2
+        if s[gidx] == '-':
+            pass
+        else:
+            savesentry2+=s[gidx]
+        if g[gidx] == '-':
+            pass
+        else:
+            goalsMatch2+=g[gidx]
+
+
+def generateBoxScore(hoa, team, week):
+    opponent = ''
+    for t in fTeams.keys():
+        if fTeams[t] == team:
+            pass
+        else:
+            opponent = fTeams[t]
     bsentry = []
     bsentry.append(gameStats['Game Date'])
     bsentry.append(gameStats['Game Year'])
@@ -388,16 +429,16 @@ def generateBoxScore(hoa , team, week):
     bsentry.append(gameStats['Game ID'])
     teamid = teamdf.loc[teamdf['City'] == team].iloc[0]['team_id']
     bsentry.append(teamid)
-    bsentry.append(int(teamTotals[team]['G']))
-    bsentry.append(int(teamTotals[team]['SH']))
-    bsentry.append(int(teamTotals[team]['G'])/int(teamTotals[team]['SH']))
-    bsentry.append(int(teamTotals[team]['Wd. SH']))
-    bsentry.append(int(teamTotals[team]['Bl. SH (Off.)']))
-    bsentry.append(int(teamTotals[team]['Bl. SH (Def)']))
-    bsentry.append(int(teamTotals[team]['LB']))
-    bsentry.append(int(teamTotals[team]['T']))
-    bsentry.append(int(teamTotals[team]['CTO']))
-    fos = teamTotals[team]['FO'].split('/')
+    bsentry.append(int(fTeamTotals[team]['G']))
+    bsentry.append(int(fTeamTotals[team]['SH']))
+    bsentry.append(int(fTeamTotals[team]['G'])/int(fTeamTotals[team]['SH']))
+    bsentry.append(int(fTeamTotals[team]['Wd. SH']))
+    bsentry.append(int(fTeamTotals[team]['Bl. SH (Off.)']))
+    bsentry.append(int(fTeamTotals[team]['Bl. SH (Def)']))
+    bsentry.append(int(fTeamTotals[team]['LB']))
+    bsentry.append(int(fTeamTotals[team]['T']))
+    bsentry.append(int(fTeamTotals[team]['CTO']))
+    fos = fTeamTotals[team]['FO'].split('/')
     foWin = int(fos[0])
     foLoss = int(fos[1]) - foWin
     foPerc = foWin/int(fos[1])
@@ -426,11 +467,36 @@ def generateBoxScore(hoa , team, week):
                     pk+=penaltyStats[teampp][item]
     bsentry.append(ppg)
     bsentry.append(ppopp)
-    bsentry.append(ppg/ppopp)
+    bsentry.append(ppg/ppopp)                                       
     bsentry.append(pk)
     bsentry.append(penalties)
     bsentry.append(pkp)
-    
+    numTeamCheck = 0
+    if goalsMatch1 == fTeamTotals[team]['G']:
+        numTeamCheck = 2
+        bsentry.append(savesentry2)
+        bsentry.append(savesentry2/int(fTeamTotals[opponent]['G']))
+    else:
+        bsentry.append(savesentry1)
+        bsentry.append(savesentry1/int(fTeamTotals[opponent]['G']))
+        numTeamCheck = 1
+    if winCheck == numTeamCheck:
+        bsentry.append(1)
+    else:
+        bsentry.append(0)
+        qKey = ''
+    for q in quarters.keys():
+        if team in q:
+            qKey = q
+    for qs in quarters[qKey].keys():
+        bsentry.append(int(quarters[qKey][qs]))
+    bsentry.append(hoa)
+    bsentry.append(fTeamTotals[team]['A'])
+    return bsentry
+
+for t in fTeams.keys():
+    print(generateBoxScore(t, fTeams[t], 1))
+
 
 
 

@@ -7,5 +7,5 @@ dict['TEST3'] = 10
 fdict = {}
 for x in dict.keys():
     fdict[x.title()] = dict[x]
-   
-print(fdict) 
+for i in range(2):
+    print(i)
