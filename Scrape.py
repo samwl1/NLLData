@@ -50,7 +50,7 @@ soup = BeautifulSoup(page.content, 'html.parser')
 htmlTag = list(soup.children)[2]
 trs = soup.find_all('tr')
 goalieCol = ['#', "Name", 'GA', 'Mins', 'SH', 'SVS', 'PIM']
-columns = ["#", "Player Name", "Position", "G", "A", "LB", "CTO", "T", "SH", "PIM", "Wd. SH", "Bl. SH (Off.)", "Bl. SH (Def)", "TSA", "FO"]
+columns = ["#", "Player Name", "Position", "G", "A", "LB", "CTO", "T", "SH", "PIM", "Wd. SH", "Bl. SH (Off.)", "Bl. SH (Def)", "TSA", "FO", "Team"]
 boxScoreCol = ['Date', 'Year', 'Week', 'game_id', 'team_id', 'Goals', 'Shots', 'Shot_Percent', 'Wide Shots','SH_BLK_OFF', 'SH_BLK_DEF','GB', 'TOs', 'CTOs', 'FO_Win', 'FO_Loss', 'FO_Percent','Power_Play_Goals', 'Power_Play_Opp', 'Power_Play_Percent', 'Penalty_Kill', 'Penalties', 'Pentalty_Kill_Percent', 'Saves', 'Save_Percent', 'Win', 'Q1_Score', 'Q2_Score', 'Q3_Score', 'Q4_Score', 'OT', 'OT_Score', 'Home_Away', 'Assists']
 
 i = 0
@@ -90,7 +90,7 @@ quarterFlag = False
 quarterFlag2 = False
 ppFlag = False
 ppCountFlag = False
-
+playerTeam = ''
 qIndx = 0
 qTeam = ''
 placeholderPP = ''
@@ -105,6 +105,7 @@ for link in trs:
         elif 'VISITORS' in kid and len(kid) <= 40:
             nameSplit = kid.split(':')
             teams[nameSplit[0]] = nameSplit[1].strip()
+            playerTeam = nameSplit[1].strip().title()
         elif 'SCORING' in kid and len(kid) <= 10:
             quarterFlag = True
         elif 'SHOTS' in kid and len(kid) < 10:
@@ -112,6 +113,7 @@ for link in trs:
         elif 'HOME' in kid and len(kid) <= 40:
             nameSplit = kid.split(':')
             teams[nameSplit[0]] = nameSplit[1].strip()
+            playerTeam = nameSplit[1].strip().title()
         elif 'PLAYERS' in kid and len(kid) == len('players'):
             flag = True
             continue
@@ -343,6 +345,7 @@ for link in trs:
                         continue
                     if i == 14:
                         entry.append(kid)
+                        entry.append(playerTeam)
                         df.loc[row] = entry
                         entry = []
                         row+=1
@@ -360,7 +363,7 @@ for link in trs:
                         entry.append(num)
                     i+=1
 
-  
+
 splits = gameStats['Game Summary'].split('\n')
 fixedSplits = []
 for split in splits:
@@ -494,13 +497,20 @@ def generateBoxScore(hoa, team, week):
     bsentry.append(fTeamTotals[team]['A'])
     return bsentry
 
-for t in fTeams.keys():
-    print(generateBoxScore(t, fTeams[t], 1))
 
-
-
-
-
+def generatePlayerStat(name, week, tIdx):
+    pnSplit = name.split(',')
+    psentry = []
+    psentry.append(gameStats['Game Year'])
+    psentry.append(int(week))
+    psentry.append(gameStats['Game ID'])
+    tidrow = teamdf[teamdf['City'] == df.iloc[tIdx]['Team']]
+    psentry.append(tidrow['team_id'].iloc[0])
+    psentry.append(pnSplit[1])
+    psentry.append(int(df['G'].iloc[tIdx]))
+    psentry.append(int(df['SH'].iloc[tIdx]))
+    psentry.append(int(df['G'].iloc[tIdx]))
+    
 
 # 'Date', 'Year', 'Week', 'game_id', 'team_id', 'Goals', 'Shots', 'Shot_Percent', 
 # 'Wide Shots','SH_BLK_OFF', 'SH_BLK_DEF','GB', 'TOs', 'CTOs', 'FO_Win', 'FO_Loss', 
